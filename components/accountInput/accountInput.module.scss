@@ -1,0 +1,45 @@
+.container {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 1.4rem;
+  margin-bottom: 1rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+}
+.field {
+  display: flex;
+  margin: 0.5rem 0.5rem 0.5rem 0;
+}
+
+.accountName {
+  min-width: 210px;
+  margin: 0 0.5rem 0 0.5rem;
+}
+
+.input {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 38px;
+  width: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box;
+
+  font-size: 14px;
+  line-height: 1.38;
+
+  background-color: white;
+
+  outline: none;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  color: black;
+}
+
+.select {
+  margin-left: 8px;
+  padding: 0 12px;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
