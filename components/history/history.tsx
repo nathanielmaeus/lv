@@ -8,6 +8,7 @@ import { round } from "../../helpers";
 
 import styles from "./history.module.scss";
 import Chart from "react-google-charts";
+import { Button } from "components/button";
 
 const OPTIONS = {
   intervals: { style: "sticks" },
@@ -23,13 +24,13 @@ const OPTIONS = {
     textStyle: { color: "#FFF" },
     gridlines: { color: "#1E4D6B" },
   },
-  chartArea: { width: "70%", height: "80%" },
+  chartArea: { width: "70%", height: "90%" },
   animation: {
     startup: true,
-    duration:600,
-    easing: 'linear'
+    duration: 600,
+    easing: "linear",
   },
-  pointsVisible: true
+  pointsVisible: true,
 };
 
 function History() {
@@ -93,9 +94,7 @@ function History() {
       <div className={styles.container}>
         {renderItems()}
         {!isOpened && (
-          <button type="button" className={styles.button} onClick={() => setIsOpened((v) => !v)}>
-            Ещё
-          </button>
+          <Button onClick={() => setIsOpened((v) => !v)}>Ещё</Button>
         )}
       </div>
       {renderChart()}

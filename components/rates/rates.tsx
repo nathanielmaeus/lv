@@ -1,9 +1,11 @@
 import React from "react";
+
+import { STATUS } from "model";
 import { IRates } from "model/types";
 
-import styles from "./rates.module.scss";
-import { STATUS } from "model";
 import { Money } from "components/money";
+
+import styles from "./rates.module.scss";
 
 interface IRatesComponent {
   status: STATUS;

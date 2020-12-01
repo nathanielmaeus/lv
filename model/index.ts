@@ -9,7 +9,6 @@ import type {
   ISavings,
   ITotalStorage,
 } from "./types";
-import { parseStringToDate } from "helpers";
 
 export enum STATUS {
   initial = "initial",
@@ -20,7 +19,7 @@ export enum STATUS {
 
 const INITIAL: IFinance = {
   1: {
-    id: 1,
+    timestamp: 1,
     name: "",
     amount: 0,
     currency: "USD",
@@ -35,23 +34,23 @@ export const $date = root.createStore<string | null>(null);
 export const $finance = root.createStore<IFinance>(INITIAL);
 
 export const $savingsHistory = root.createStore<ITotalStorage[]>([]);
-export const $shortSavingsHistory = $savingsHistory.map((store) =>
-  store.slice(0, 6)
-);
+export const $shortSavingsHistory = $savingsHistory.map((store) => {
+  const newStore = [...store];
+  return newStore.reverse().slice(0, 6);
+});
 export const $savingsHistoryChart = $savingsHistory.map((store) =>
   store.reduce((acc, item) => {
-    const shortDate = item.date.split('-').slice(0, -1).join('.');
+    const shortDate = item.date.split("-").slice(0, -1).join(".");
     acc.push([shortDate, item.RUB]);
     return acc;
-  }, []).reverse()
+  }, [])
 );
 
 export const $savingsHistoryObject = createStoreObject({
   full: $savingsHistory,
   short: $shortSavingsHistory,
-  chartFormat: $savingsHistoryChart
-})
-
+  chartFormat: $savingsHistoryChart,
+});
 
 export const $totalSaving = combine($finance, $rates, (finance, rates) => {
   const initial = {
@@ -138,7 +137,23 @@ export const pageLoaded = root.createEvent();
 export const createAccount = root.createEvent<void>();
 export const updateAccount = root.createEvent<IAccount>();
 export const deleteAccount = root.createEvent<number>();
-export const initializeSavings = root.createEvent<void>();
 
-export const getAllCurrency = root.createEffect<void, IAllCurrency, string>();
-export const saveTotal = root.createEffect<ISavings, ITotalStorage[], void>();
+export const getAllCurrencyFx = root.createEffect<void, IAllCurrency, string>();
+export const getAccountsFx = root.createEffect<void, IAccount[], void>();
+export const removeAccountFx = root.createEffect<number, IAccount[], void>();
+export const updateAccountFx = root.createEffect<IAccount, IAccount[], void>();
+
+export const saveTotalFx = root.createEffect<
+  {
+    savingsHistory: ITotalStorage[];
+    totalSaving: ISavings;
+  },
+  ITotalStorage[],
+  void
+>();
+
+export const getTotalSavingsFx = root.createEffect<
+  void,
+  ITotalStorage[],
+  void
+>();

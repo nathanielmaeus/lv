@@ -1,59 +1,19 @@
-import React, {
-  ChangeEvent,
-  useEffect,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import cls from "classnames";
 
-import styles from "./accountInput.module.scss";
 import { IRates } from "model/types";
 
-interface IState {
-  amountValue: number;
-  accountName: string;
-  currencyValue: keyof IRates;
-}
+import { Button } from "components/button";
 
-const getInitialState = ({
-  amount = 0,
-  name = "",
-  currency = "USD",
-}: {
-  name: string;
-  amount: number;
-  currency: keyof IRates;
-}): IState => ({
-  amountValue: amount,
-  accountName: name,
-  currencyValue: currency,
-});
-
-function mainReducer(state, action) {
-  switch (action.type) {
-    case "CHANGE": {
-      const { name, value } = action.result;
-      console.log(action.result);
-
-      return {
-        ...state,
-        [name]: value,
-      };
-    }
-    default: {
-      return state;
-    }
-  }
-}
+import styles from "./accountInput.module.scss";
 
 interface IAccountInput {
-  id: number;
+  timestamp: number;
   name: string;
   amount: number;
   currency: keyof IRates;
   onMessage: (v: {
-    id: number;
+    timestamp: number;
     name: string;
     amount: number;
     currency: keyof IRates;
@@ -65,7 +25,7 @@ function AccountInput({
   name,
   currency,
   amount,
-  id,
+  timestamp,
   onMessage,
   onDelete,
 }: IAccountInput) {
@@ -77,10 +37,16 @@ function AccountInput({
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (isInputNameVisible) {
+      inputRef.current.focus();
+    }
+  }, [isInputNameVisible]);
+
   const handleMessage = (name, amount, currency) => {
     if (name && amount && currency) {
       onMessage({
-        id: id,
+        timestamp,
         name,
         amount,
         currency,
@@ -103,14 +69,13 @@ function AccountInput({
     handleMessage(accountName, Number(e.target.value), currencyValue);
   };
 
-  const handleDelete = (e: Event) => {
+  const handleDelete = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.preventDefault();
-    onDelete(id);
+    onDelete(timestamp);
   };
 
   const handleClickOnName = () => {
     setIsInputNameVisible((v) => !v);
-    inputRef!.current.focus();
   };
 
   const handleBlur = () => {
@@ -146,30 +111,28 @@ function AccountInput({
   };
 
   return (
-    <>
-      <div className={styles.field}>
-        {renderNameInput()}
-        <input
-          className={styles.input}
-          type="number"
-          placeholder="Сумма"
-          onChange={handleChangeAmount}
-          name="amountValue"
-          value={amountValue}
-        />
-        <select
-          className={styles.select}
-          name="currencyValue"
-          value={currencyValue}
-          onChange={handleChangeCurrency}
-        >
-          <option value="USD">Доллар</option>
-          <option value="EUR">Евро</option>
-          <option value="RUB">Рубли</option>
-        </select>
-      </div>
-      {/* <Button onClick={handleDelete}>Удалить</Button> */}
-    </>
+    <div className={styles.field}>
+      {renderNameInput()}
+      <input
+        className={styles.input}
+        type="number"
+        placeholder="Сумма"
+        onChange={handleChangeAmount}
+        name="amountValue"
+        value={amountValue}
+      />
+      <select
+        className={styles.select}
+        name="currencyValue"
+        value={currencyValue}
+        onChange={handleChangeCurrency}
+      >
+        <option value="USD">Доллар</option>
+        <option value="EUR">Евро</option>
+        <option value="RUB">Рубли</option>
+      </select>
+      <Button onClick={handleDelete}>Удалить</Button>
+    </div>
   );
 }
 

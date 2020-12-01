@@ -1,24 +1,13 @@
 import React from "react";
-import { IRates } from "model/types";
-
-import styles from "./ratioCurrency.module.scss";
-import {
-  $historyRates,
-  $separateCurrencyTotal,
-  $totalRatio,
-  $totalSaving,
-  STATUS,
-} from "model";
-import { Money } from "components/money";
 import { useStore } from "effector-react/ssr";
+
+import { $separateCurrencyTotal, $totalRatio } from "model";
+
 import Chart from "react-google-charts";
 
-interface IRatesComponent {
-  status: STATUS;
-  rates: IRates;
-  date: string;
-  error: string;
-}
+import { Money } from "components/money";
+
+import styles from "./ratioCurrency.module.scss";
 
 function Rates() {
   const separateCurrencyTotal = useStore($separateCurrencyTotal);
@@ -29,11 +18,11 @@ function Rates() {
       <div className={styles.results}>
         <div className={styles.sum}>
           <Money amount={separateCurrencyTotal.RUB} currency="RUB" />(
-          {totalRatio.RUB}%),
+          {totalRatio.RUB}%),&nbsp;
         </div>
         <div className={styles.sum}>
           <Money amount={separateCurrencyTotal.USD} currency="USD" />(
-          {totalRatio.USD}%),
+          {totalRatio.USD}%),&nbsp;
         </div>
         <div className={styles.sum}>
           <Money amount={separateCurrencyTotal.EUR} currency="EUR" />(
@@ -57,7 +46,7 @@ function Rates() {
           legend: {
             textStyle: { color: "#fff" },
           },
-          colors: ['#09263b', '#212c35', '#465764']
+          colors: ["#09263b", "#212c35", "#465764"],
         }}
       />
     </div>

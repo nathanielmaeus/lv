@@ -1,25 +1,31 @@
-import { forward } from "effector";
+import { sample } from "effector";
 
 import {
   $status,
   $error,
   $rates,
-  $historyRates,
   $date,
   $finance,
   $totalSaving,
-  createAccount,
-  updateAccount,
-  deleteAccount,
-  getAllCurrency,
-  initializeSavings,
+  getAllCurrencyFx,
+  removeAccountFx,
   $savingsHistory,
   STATUS,
-  saveTotal,
+  saveTotalFx,
+  getTotalSavingsFx,
+  getAccountsFx,
+  updateAccountFx,
 } from ".";
 
-import { getAllCurrencyApi } from "./api";
-import type { IRates, ISavings, ITotalStorage } from "./types";
+import {
+  addTotalApi,
+  getAccountsApi,
+  getAllCurrencyFxApi,
+  getTotalApi,
+  removeAccountApi,
+  updateAccountApi,
+} from "./api";
+import type { IFinance, ITotalStorage } from "./types";
 import { parseDate } from "../helpers";
 
 const options = {
@@ -29,155 +35,78 @@ const options = {
   day: "numeric",
 };
 
-function saveTotalToLS(total: ISavings): ITotalStorage[] {
-  const dataFromLS = localStorage.getItem("total");
-  const prevHistory: ITotalStorage[] = dataFromLS ? JSON.parse(dataFromLS) : [];
-  const currentDate = parseDate();
+getTotalSavingsFx.use(getTotalApi);
+removeAccountFx.use(removeAccountApi);
 
-  if (total.EUR === 0 && total.RUB === 0 && total.USD === 0) {
-    return prevHistory;
-  }
+// getAllCurrencyFx
 
-  const newHistoryItem: ITotalStorage = { ...total, date: currentDate };
-
-  let newHistory = [...prevHistory, newHistoryItem];
-
-  if (prevHistory.map((item) => item.date).includes(currentDate)) {
-    newHistory = [...prevHistory.slice(0, -1), newHistoryItem];
-  }
-
-  localStorage.setItem("total", JSON.stringify(newHistory));
-
-  return newHistory;
-}
-
-// getAllCurrency
-getAllCurrency.use(getAllCurrencyApi);
+getAllCurrencyFx.use(getAllCurrencyFxApi);
 
 $status
-  .on(getAllCurrency, () => STATUS.loading)
-  .on(getAllCurrency.done, () => STATUS.loaded)
-  .on(getAllCurrency.fail, () => STATUS.failed);
+  .on(getAllCurrencyFx, () => STATUS.loading)
+  .on(getAllCurrencyFx.done, () => STATUS.loaded)
+  .on(getAllCurrencyFx.fail, () => STATUS.failed);
 
-$rates.on(getAllCurrency.doneData, (_, { ratesUSD, ratesEUR }) => ({
+$rates.on(getAllCurrencyFx.doneData, (_, { ratesUSD, ratesEUR }) => ({
   USD: ratesUSD["RUB"],
   EUR: ratesEUR["RUB"],
   RUB: 1,
 }));
 
-$historyRates.on(getAllCurrency.doneData, (_, { ratesUSD, ratesEUR }) => {
-  const oldRatesItemsLS = localStorage.getItem("$rates");
-  const oldRatesItems = oldRatesItemsLS ? JSON.parse(oldRatesItemsLS) : [];
+$error.on(getAllCurrencyFx.failData, (_, $error) => $error);
 
-  const ratesItem = {
-    USD: ratesUSD["RUB"],
-    EUR: ratesEUR["RUB"],
-    RUB: 1,
-  };
-
-  if (
-    oldRatesItems.length > 0 &&
-    ratesUSD.RUB === oldRatesItems[oldRatesItems.length - 1].USD
-  ) {
-    return oldRatesItems;
-  }
-
-  const allHistory: IRates[] = [...oldRatesItems, ratesItem];
-
-  localStorage.setItem("$rates", JSON.stringify(allHistory));
-
-  return allHistory;
-});
-
-$error.on(getAllCurrency.failData, (_, $error) => $error);
-
-$date.on(getAllCurrency.doneData, (_, { date }) => {
+$date.on(getAllCurrencyFx.doneData, (_, { date }) => {
   const [year, month, day] = date.split("-");
   const dateObject = new Date(Number(year), Number(month) - 1, Number(day));
 
   return new Intl.DateTimeFormat("ru-RU", options).format(dateObject);
 });
 
-// updateAccount
+updateAccountFx.use(updateAccountApi);
+getAccountsFx.use(getAccountsApi);
 
-$finance.on(updateAccount, (state, { id, name, amount, currency }) => {
-  const newState = {
-    ...state,
-    [id]: {
-      name,
-      amount,
-      currency,
-    },
-  };
-  localStorage.setItem("data", JSON.stringify(newState));
-  return newState;
-});
-
-$totalSaving.on(updateAccount, (state, { id, name, amount, currency }) => {
-  const newState = {
-    ...state,
-    [id]: {
-      name,
-      amount,
-      currency,
-    },
-  };
-  return newState;
-});
-
-// initializeSavings
-
-$finance.on(initializeSavings, (state) => {
-  try {
-    const data = localStorage.getItem("data");
-    return data ? JSON.parse(data) : state;
-  } catch (err) {
-    return state;
+$finance.on(
+  [getAccountsFx.doneData, updateAccountFx.doneData],
+  (_, result) => {
+    return result.reduce((acc, account) => {
+      acc[account.timestamp] = account;
+      return acc;
+    }, {} as IFinance);
   }
-});
+);
 
-$savingsHistory.on(initializeSavings, (state) => {
-  try {
-    const data = localStorage.getItem("total");
-    const history: ITotalStorage[] = data ? JSON.parse(data) : state;
-    return history.reverse();
-  } catch (err) {
-    return state;
+$savingsHistory.on(getTotalSavingsFx.doneData, (_, result) => result);
+
+// saveTotalFx
+
+saveTotalFx.use(async ({ totalSaving, savingsHistory }) => {
+  const prevHistory: ITotalStorage[] = [...savingsHistory];
+
+  if (totalSaving.EUR === 0 && totalSaving.RUB === 0 && totalSaving.USD === 0) {
+    return prevHistory;
   }
+
+  const newHistoryItem: ITotalStorage = { ...totalSaving, date: parseDate() };
+  return await addTotalApi(newHistoryItem);
 });
 
-// saveTotal
+$savingsHistory.on(saveTotalFx.doneData, (_, newHistory) => newHistory);
 
-saveTotal.use((savingHistory) => {
-  return saveTotalToLS(savingHistory);
+// removeAccountFx
+
+$finance.on(removeAccountFx.doneData, (_, result) => {
+  return result.reduce((acc, account) => {
+    acc[account.timestamp] = account;
+    return acc;
+  }, {} as IFinance);
 });
 
-$savingsHistory.on(saveTotal.doneData, (_, newHistory) => newHistory.reverse());
-
-//
-
-$finance.on(createAccount, (state) => {
-  const currentId = Date.now().valueOf();
-  return {
-    ...state,
-    [currentId]: {
-      name: "",
-      amount: "",
-      currency: "USD",
-    },
-  };
-});
-
-$finance.on(deleteAccount, (state, id) => {
-  const currentState = { ...state };
-
-  delete currentState[id];
-  localStorage.setItem("data", JSON.stringify(currentState));
-
-  return currentState;
-});
-
-forward({
-  from: $totalSaving,
-  to: saveTotal,
+sample({
+  source: $savingsHistory,
+  clock: $totalSaving,
+  fn: (savingsHistory, totalSaving) => ({
+    savingsHistory,
+    totalSaving,
+  }),
+  target: saveTotalFx,
 });

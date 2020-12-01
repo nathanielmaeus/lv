@@ -3,13 +3,13 @@
   margin: 0 auto;
   padding: 2rem;
 }
-.results {
-  margin: 1rem 0;
-}
+
 .stats {
   display: flex;
   justify-content: space-between;
+  margin-top: 5rem;
 }
+
 .sum {
   font-size: 1.2rem;
   margin: 0.5rem 0;
@@ -18,4 +18,9 @@
 .results {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+
+.accounts {
+  max-width: 600px;
 }

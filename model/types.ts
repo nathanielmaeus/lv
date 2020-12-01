@@ -23,7 +23,7 @@ export interface IData {
 }
 
 export interface IAccount {
-  id: number;
+  timestamp: number;
   name: string;
   amount: number;
   currency: currencyType;

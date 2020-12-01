@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { serialize, fork, allSettled } from "effector/fork";
 import { useEvent, useStore } from "effector-react/ssr";
 
@@ -8,26 +8,31 @@ import { History } from "../components/history";
 import styles from "./index.module.scss";
 
 import {
-  getAllCurrency,
+  getAllCurrencyFx,
   $rates,
   $totalSaving,
-  initializeSavings,
   $date,
   $error,
   $status,
   $finance,
-  updateAccount,
-  deleteAccount,
+  updateAccountFx,
+  getTotalSavingsFx,
+  getAccountsFx,
+  removeAccountFx,
 } from "../model";
 
 import { Money } from "../components/money";
 import { Rates } from "components/rates";
 import { RatioCurrency } from "components/ratioCurrency";
 import { AccountInput } from "components/accountInput";
+import { IAccount } from "model/types";
 
 export const getServerSideProps = async () => {
   const scope = fork(root);
-  await allSettled(getAllCurrency, { scope, params: undefined });
+
+  await allSettled(getAllCurrencyFx, { scope, params: undefined });
+  await allSettled(getTotalSavingsFx, { scope, params: undefined });
+  await allSettled(getAccountsFx, { scope, params: undefined });
 
   return {
     props: {
@@ -37,13 +42,8 @@ export const getServerSideProps = async () => {
 };
 
 function Dashboard() {
-  const initializeSavingsEvent = useEvent(initializeSavings);
-  const updateAccountEvent = useEvent(updateAccount);
-  const deleteAccountEvent = useEvent(deleteAccount);
-
-  useEffect(() => {
-    initializeSavingsEvent();
-  }, []);
+  const updateAccountEvent = useEvent(updateAccountFx);
+  const removeAccountEvent = useEvent(removeAccountFx);
 
   const totalSaving = useStore($totalSaving);
   const finance = useStore($finance);
@@ -53,22 +53,20 @@ function Dashboard() {
   const date = useStore($date);
   const error = useStore($error);
 
-  const handleChange = (detail) => {
+  const handleChange = (detail: IAccount): void => {
     updateAccountEvent(detail);
   };
 
   function handleDelete(id: number) {
-    deleteAccountEvent(id);
+    removeAccountEvent(id);
   }
 
   const renderAccounts = () => {
-    console.log(finance);
-    
     return Object.keys(finance).map((accountKey, idx) => {
       return (
         <AccountInput
           key={accountKey}
-          id={Number(accountKey)}
+          timestamp={Number(accountKey)}
           name={finance[accountKey].name}
           amount={finance[accountKey].amount}
           currency={finance[accountKey].currency}
@@ -78,25 +76,28 @@ function Dashboard() {
       );
     });
   };
+
   return (
     <div className={styles.app}>
       <Rates rates={rates} error={error} status={status} date={date} />
-      {renderAccounts()}
+      <div className={styles.results}>
+        <div className={styles.accounts}>{renderAccounts()}</div>
+        <RatioCurrency />
+      </div>
       <div className={styles.stats}>
         <History />
       </div>
-      <div className={styles.results}>
+      <div>
         <div className={styles.sum}>
-          <Money amount={totalSaving.RUB} currency="RUB" />,
+          <Money amount={totalSaving.RUB} currency="RUB" />
         </div>
         <div className={styles.sum}>
-          <Money amount={totalSaving.USD} currency="USD" />,
+          <Money amount={totalSaving.USD} currency="USD" />
         </div>
         <div className={styles.sum}>
-          <Money amount={totalSaving.EUR} currency="EUR" />,
+          <Money amount={totalSaving.EUR} currency="EUR" />
         </div>
       </div>
-      <RatioCurrency />
     </div>
   );
 }
