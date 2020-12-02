@@ -1,12 +1,12 @@
-import { sample } from "effector";
+import { merge, sample } from "effector";
 
 import {
   $status,
   $error,
   $rates,
   $date,
-  $finance,
-  $totalSaving,
+  $accounts,
+  $currentTotalSavings,
   getAllCurrencyFx,
   removeAccountFx,
   $savingsHistory,
@@ -15,17 +15,21 @@ import {
   getTotalSavingsFx,
   getAccountsFx,
   updateAccountFx,
+  createAccountFx,
+  saveChangesForAccount,
+  updateLastTotalFx,
 } from ".";
 
 import {
   addTotalApi,
+  createAccountApi,
   getAccountsApi,
   getAllCurrencyFxApi,
   getTotalApi,
   removeAccountApi,
   updateAccountApi,
 } from "./api";
-import type { IFinance, ITotalStorage } from "./types";
+import type { IAccount, IFinance, ITotalStorage } from "./types";
 import { parseDate } from "../helpers";
 
 const options = {
@@ -35,12 +39,17 @@ const options = {
   day: "numeric",
 };
 
-getTotalSavingsFx.use(getTotalApi);
-removeAccountFx.use(removeAccountApi);
+const INIT_ACCOUNT: IAccount = {
+  timestamp: Date.now(),
+  name: "Name",
+  amount: 0,
+  currency: "RUB",
+};
 
 // getAllCurrencyFx
 
 getAllCurrencyFx.use(getAllCurrencyFxApi);
+createAccountFx.use(() => createAccountApi(INIT_ACCOUNT));
 
 $status
   .on(getAllCurrencyFx, () => STATUS.loading)
@@ -57,16 +66,16 @@ $error.on(getAllCurrencyFx.failData, (_, $error) => $error);
 
 $date.on(getAllCurrencyFx.doneData, (_, { date }) => {
   const [year, month, day] = date.split("-");
-  const dateObject = new Date(Number(year), Number(month) - 1, Number(day));
-
-  return new Intl.DateTimeFormat("ru-RU", options).format(dateObject);
+  return `${day}.${month}.${year}`;
 });
 
-updateAccountFx.use(updateAccountApi);
 getAccountsFx.use(getAccountsApi);
 
-$finance.on(
-  [getAccountsFx.doneData, updateAccountFx.doneData],
+// updateAccountFx
+updateAccountFx.use(updateAccountApi);
+
+$accounts.on(
+  [getAccountsFx.doneData, updateAccountFx.doneData, createAccountFx.doneData],
   (_, result) => {
     return result.reduce((acc, account) => {
       acc[account.timestamp] = account;
@@ -75,10 +84,22 @@ $finance.on(
   }
 );
 
+sample({
+  source: [$savingsHistory, $currentTotalSavings],
+  clock: updateAccountFx.doneData,
+  fn: ([savingsHistory, totalSaving]) => ({
+    savingsHistory,
+    totalSaving,
+  }),
+  target: saveTotalFx,
+});
+
+// getTotalSavingsFx
+getTotalSavingsFx.use(getTotalApi);
+
 $savingsHistory.on(getTotalSavingsFx.doneData, (_, result) => result);
 
 // saveTotalFx
-
 saveTotalFx.use(async ({ totalSaving, savingsHistory }) => {
   const prevHistory: ITotalStorage[] = [...savingsHistory];
 
@@ -90,23 +111,48 @@ saveTotalFx.use(async ({ totalSaving, savingsHistory }) => {
   return await addTotalApi(newHistoryItem);
 });
 
+updateLastTotalFx.use(async (lastTotal: ITotalStorage) => {
+  return await addTotalApi(lastTotal);
+});
+
 $savingsHistory.on(saveTotalFx.doneData, (_, newHistory) => newHistory);
 
 // removeAccountFx
+removeAccountFx.use(removeAccountApi);
 
-$finance.on(removeAccountFx.doneData, (_, result) => {
+$accounts.on(removeAccountFx.doneData, (_, result) => {
   return result.reduce((acc, account) => {
     acc[account.timestamp] = account;
     return acc;
   }, {} as IFinance);
 });
 
+$accounts.on(saveChangesForAccount, (finance, account) => {
+  return {
+    ...finance,
+    [account.timestamp]: {
+      ...account,
+    },
+  };
+});
+
 sample({
-  source: $savingsHistory,
-  clock: $totalSaving,
-  fn: (savingsHistory, totalSaving) => ({
-    savingsHistory,
-    totalSaving,
-  }),
-  target: saveTotalFx,
+  source: [$savingsHistory, $currentTotalSavings],
+  clock: merge([saveChangesForAccount, removeAccountFx.doneData]),
+  fn: ([savingsHistory, totalSaving]) => {
+    const newHistory = [...savingsHistory];
+    newHistory.splice(-1, 1);
+
+    return [...newHistory, { date: parseDate(), ...totalSaving }];
+  },
+  target: $savingsHistory,
+});
+
+sample({
+  source: $currentTotalSavings,
+  clock: removeAccountFx.doneData,
+  fn: (totalSaving) => {
+    return { date: parseDate(), ...totalSaving };
+  },
+  target: updateLastTotalFx,
 });

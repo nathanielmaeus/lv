@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import cls from "classnames";
 
-import { IRates } from "model/types";
+import { IAccount, IRates } from "model/types";
 
 import { Button } from "components/button";
 
@@ -12,13 +12,9 @@ interface IAccountInput {
   name: string;
   amount: number;
   currency: keyof IRates;
-  onMessage: (v: {
-    timestamp: number;
-    name: string;
-    amount: number;
-    currency: keyof IRates;
-  }) => void;
+  onMessage: (v: IAccount) => void;
   onDelete: (v: number) => void;
+  onBlur: (v: IAccount) => void;
 }
 
 function AccountInput({
@@ -28,6 +24,7 @@ function AccountInput({
   timestamp,
   onMessage,
   onDelete,
+  onBlur,
 }: IAccountInput) {
   const [accountName, setAccountName] = useState<string>(name);
   const [amountValue, setAmountValue] = useState<number>(amount);
@@ -78,11 +75,21 @@ function AccountInput({
     setIsInputNameVisible((v) => !v);
   };
 
-  const handleBlur = () => {
+  const handleBlur = (e) => {
     if (!accountName) {
       return;
     }
-    setIsInputNameVisible((v) => !v);
+    
+    if(e.target.name === 'accountName') {
+      setIsInputNameVisible((v) => !v);
+    }
+
+    onBlur({
+      timestamp,
+      name,
+      amount,
+      currency,
+    });
   };
 
   const renderNameInput = () => {
@@ -118,12 +125,14 @@ function AccountInput({
         type="number"
         placeholder="Сумма"
         onChange={handleChangeAmount}
+        onBlur={handleBlur}
         name="amountValue"
         value={amountValue}
       />
       <select
         className={styles.select}
         name="currencyValue"
+        onBlur={handleBlur}
         value={currencyValue}
         onChange={handleChangeCurrency}
       >

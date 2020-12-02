@@ -4,10 +4,10 @@ import { combine, createStoreObject } from "effector";
 import type {
   IRates,
   IFinance,
-  IAccount,
   IAllCurrency,
   ISavings,
   ITotalStorage,
+  IAccount,
 } from "./types";
 
 export enum STATUS {
@@ -15,6 +15,11 @@ export enum STATUS {
   loading = "loading",
   loaded = "loaded",
   failed = "failed",
+}
+
+interface ISaveTotal {
+  savingsHistory: ITotalStorage[];
+  totalSaving: ISavings;
 }
 
 const INITIAL: IFinance = {
@@ -31,7 +36,7 @@ export const $error = root.createStore<string | null>(null);
 export const $rates = root.createStore<IRates>({ USD: 0, EUR: 0, RUB: 0 });
 export const $historyRates = root.createStore<IRates[]>([]);
 export const $date = root.createStore<string | null>(null);
-export const $finance = root.createStore<IFinance>(INITIAL);
+export const $accounts = root.createStore<IFinance>(INITIAL);
 
 export const $savingsHistory = root.createStore<ITotalStorage[]>([]);
 export const $shortSavingsHistory = $savingsHistory.map((store) => {
@@ -52,7 +57,7 @@ export const $savingsHistoryObject = createStoreObject({
   chartFormat: $savingsHistoryChart,
 });
 
-export const $totalSaving = combine($finance, $rates, (finance, rates) => {
+export const $currentTotalSavings = combine($accounts, $rates, (finance, rates) => {
   const initial = {
     USD: 0,
     EUR: 0,
@@ -79,7 +84,7 @@ export const $totalSaving = combine($finance, $rates, (finance, rates) => {
   return totalOnlyWithRUB;
 });
 
-export const $separateCurrencyTotal = combine($finance, (finance) => {
+export const $separateCurrencyTotal = combine($accounts, (finance) => {
   const initial = {
     USD: 0,
     EUR: 0,
@@ -104,7 +109,7 @@ export const $separateCurrencyTotal = combine($finance, (finance) => {
 
 export const $totalRatio = combine(
   $separateCurrencyTotal,
-  $totalSaving,
+  $currentTotalSavings,
   (separateCurrencyTotal, totalSaving) => {
     const separateCurrencyTotalKeys = Object.keys(
       separateCurrencyTotal
@@ -137,21 +142,23 @@ export const pageLoaded = root.createEvent();
 export const createAccount = root.createEvent<void>();
 export const updateAccount = root.createEvent<IAccount>();
 export const deleteAccount = root.createEvent<number>();
+export const saveChangesForAccount = root.createEvent<IAccount>();
 
 export const getAllCurrencyFx = root.createEffect<void, IAllCurrency, string>();
 export const getAccountsFx = root.createEffect<void, IAccount[], void>();
 export const removeAccountFx = root.createEffect<number, IAccount[], void>();
 export const updateAccountFx = root.createEffect<IAccount, IAccount[], void>();
-
-export const saveTotalFx = root.createEffect<
-  {
-    savingsHistory: ITotalStorage[];
-    totalSaving: ISavings;
-  },
+export const createAccountFx = root.createEffect<void, IAccount[], void>();
+export const updateLastTotalFx = root.createEffect<
+  ITotalStorage,
   ITotalStorage[],
   void
 >();
-
+export const saveTotalFx = root.createEffect<
+  ISaveTotal,
+  ITotalStorage[],
+  void
+>();
 export const getTotalSavingsFx = root.createEffect<
   void,
   ITotalStorage[],

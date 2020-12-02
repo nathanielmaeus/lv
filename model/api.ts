@@ -100,7 +100,7 @@ export async function createAccountApi(account: IAccount): Promise<IAccount[]> {
 export async function removeAccountApi(timestamp: number): Promise<IAccount[]> {
   try {
     const result = await fetch(
-      `http://localhost:3000/account/remove?timestamp=${timestamp}`,
+      `http://localhost:3000/account?timestamp=${timestamp}`,
       {
         method: "DELETE",
       }

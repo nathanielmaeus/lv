@@ -145,3 +145,4 @@ src/svg/*.tsx
 
 # Zeit
 .now
+.env
