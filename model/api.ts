@@ -6,6 +6,8 @@ import type {
   ITotalStorage,
 } from "./types";
 
+const API_HOST = `http://${process.env.HOST}:${process.env.PORT}`;
+
 export async function getCurrencyApi(currency: currencyType): Promise<IData> {
   try {
     const result = await fetch(
@@ -45,7 +47,7 @@ export async function getAllCurrencyFxApi(): Promise<IAllCurrency> {
 
 export async function getTotalApi(): Promise<ITotalStorage[]> {
   try {
-    const result = await fetch(`http://localhost:3000/total`);
+    const result = await fetch(`${API_HOST}/total`);
 
     const data = await result.json();
 
@@ -61,7 +63,7 @@ export async function getTotalApi(): Promise<ITotalStorage[]> {
 
 export async function getAccountsApi(): Promise<IAccount[]> {
   try {
-    const result = await fetch(`http://localhost:3000/account`);
+    const result = await fetch(`${API_HOST}/account`);
 
     const data = await result.json();
 
@@ -77,7 +79,7 @@ export async function getAccountsApi(): Promise<IAccount[]> {
 
 export async function createAccountApi(account: IAccount): Promise<IAccount[]> {
   try {
-    const result = await fetch(`http://localhost:3000/account`, {
+    const result = await fetch(`${API_HOST}/account`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json;charset=utf-8",
@@ -100,7 +102,7 @@ export async function createAccountApi(account: IAccount): Promise<IAccount[]> {
 export async function removeAccountApi(timestamp: number): Promise<IAccount[]> {
   try {
     const result = await fetch(
-      `http://localhost:3000/account?timestamp=${timestamp}`,
+      `${API_HOST}/account?timestamp=${timestamp}`,
       {
         method: "DELETE",
       }
@@ -120,7 +122,7 @@ export async function removeAccountApi(timestamp: number): Promise<IAccount[]> {
 
 export async function updateAccountApi(account: IAccount): Promise<IAccount[]> {
   try {
-    const result = await fetch(`http://localhost:3000/account`, {
+    const result = await fetch(`${API_HOST}/account`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json;charset=utf-8",
@@ -144,7 +146,7 @@ export async function addTotalApi(
   totalStorage: ITotalStorage
 ): Promise<ITotalStorage[]> {
   try {
-    const result = await fetch(`http://localhost:3000/total`, {
+    const result = await fetch(`${API_HOST}/total`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json;charset=utf-8",

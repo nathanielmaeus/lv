@@ -86,7 +86,7 @@ $accounts.on(
 
 sample({
   source: [$savingsHistory, $currentTotalSavings],
-  clock: updateAccountFx.doneData,
+  clock: merge([updateAccountFx.doneData, $currentTotalSavings]),
   fn: ([savingsHistory, totalSaving]) => ({
     savingsHistory,
     totalSaving,
