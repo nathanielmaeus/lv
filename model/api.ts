@@ -6,7 +6,7 @@ import type {
   ITotalStorage,
 } from "./types";
 
-const API_HOST = `http://${process.env.HOST}:${process.env.PORT}`;
+const API_HOST = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_PORT}`;
 
 export async function getCurrencyApi(currency: currencyType): Promise<IData> {
   try {
